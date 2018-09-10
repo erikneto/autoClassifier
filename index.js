@@ -30,16 +30,19 @@ console.log(`${testData.length} inputs to be classified`);
 
 
 const addToGroup = (testString) => {
-    let added = false;
-    for (let index = 0; index < stringGroup.length && !added; index++) {
+    let bestDistance = -1;
+    let bestFit = -1;
+    for (let index = 0; index < stringGroup.length; index++) {
         const element = stringGroup[index];
-        const distance = testStringInGroup(element, testString);
-        if (distance <= distanceLimit) {
-            added = true;
-            element.examples.push(testString);
+        const groupDistance = testStringInGroup(element, testString);
+        if (bestDistance === -1 || groupDistance < bestDistance) {
+            bestFit = index;
+            bestDistance = groupDistance;
         }
     }
-    if (!added) {
+    if (bestDistance <= distanceLimit && bestFit >=0) {
+        stringGroup[bestFit].examples.push(testString);
+    } else  {
         stringGroup.push({
             examples: [testString]
         })
@@ -90,7 +93,7 @@ let resultado = [];
 stringGroup.forEach((item, idx) => {
     item.examples.forEach((example) => {
         resultado.push({
-            grupo: `Grupo ${idx}`,
+            grupo: `Grupo ${idx+1}`,
             exemplo: example
         })
     })
