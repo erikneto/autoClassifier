@@ -1,0 +1,30 @@
+{
+  "name": "autoclassifier",
+  "version": "0.0.1",
+  "description": "Algorithm using Levenshtein distance to group similar text entries",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erikneto/autoClassifier.git"
+  },
+  "keywords": [
+    "Levenshtein",
+    "machine",
+    "learning",
+    "classifier"
+  ],
+  "author": "Erik Andersen Neto <erikneto@gmail.com> (https://about.me/erikandersen)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/erikneto/autoClassifier/issues"
+  },
+  "homepage": "https://github.com/erikneto/autoClassifier#readme",
+  "dependencies": {
+    "levenshtein": "1.0.5",
+    "parse-cli-arguments": "1.0.1",
+    "xlsx": "0.14.0"
+  }
+}
