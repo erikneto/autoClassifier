@@ -24,7 +24,9 @@
   "homepage": "https://github.com/erikneto/autoClassifier#readme",
   "dependencies": {
     "levenshtein": "1.0.5",
+    "node-snowball": "0.2.0",
     "parse-cli-arguments": "1.0.1",
+    "stopword": "0.1.10",
     "xlsx": "0.14.0"
   }
 }

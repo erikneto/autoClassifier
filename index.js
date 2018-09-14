@@ -1,5 +1,7 @@
 const XLSX = require('xlsx');
 const levenshtein = require('levenshtein');
+const snowball = require('node-snowball');
+const sw = require('stopword');
 
 let args = require('parse-cli-arguments')({
     options: {
@@ -9,49 +11,50 @@ let args = require('parse-cli-arguments')({
     }
 });
 
-let distanceLimit = 1;
 
 const wb = XLSX.readFile(args.sourceFile);
 let testData = XLSX.utils.sheet_to_json(wb.Sheets[`Histórico`])
-    .filter(f => f['Confiança 1'] < 30 && f.Pergunta.split(' ').length > 2)
-    .map(f => f.Pergunta.toLowerCase());
+    .filter(f => f['Confiança 1'] < 50 && f.Pergunta.split(' ').length > 2)
+    .map(f => {
+        
+        return {
+            original: f.Pergunta,
+            parsed: sw.removeStopwords(f.Pergunta.toLowerCase().split(' ').filter(f => f), sw.br).map(s => snowball.stemword(s, 'portuguese')).join(' ')
+        }
+    });
 let stringGroup = [];
 
-testData = testData.reduce((total, item) => {
-    if (!total.find(s => s === item)) {
-        total.push(item);
-    }
-    return total
-}, []);
 const smallerGroup = testData.length / 10;
+let distanceLimit = 1;
+
 
 console.log(`${testData.length} inputs to be classified`);
 
 
 
-const addToGroup = (testString) => {
+const addToGroup = (testElement) => {
     let bestDistance = -1;
     let bestFit = -1;
     for (let index = 0; index < stringGroup.length; index++) {
         const element = stringGroup[index];
-        const groupDistance = testStringInGroup(element, testString);
+        const groupDistance = testStringInGroup(element, testElement.parsed);
         if (bestDistance === -1 || groupDistance < bestDistance) {
             bestFit = index;
             bestDistance = groupDistance;
         }
     }
-    if (bestDistance <= distanceLimit && bestFit >=0) {
-        stringGroup[bestFit].examples.push(testString);
-    } else  {
+    if (bestDistance <= distanceLimit && bestFit >= 0) {
+        stringGroup[bestFit].examples.push(testElement);
+    } else {
         stringGroup.push({
-            examples: [testString]
+            examples: [testElement]
         })
     }
 }
 
 const testStringInGroup = (element, testString) => {
     return element.examples.reduce((total, item) => {
-        return total + new levenshtein(item, testString).distance
+        return total + new levenshtein(item.parsed, testString).distance
     }, 0) / element.examples.length;
 }
 
@@ -63,9 +66,10 @@ const deleteSmallGroups = () => {
         return min;
     }, smallerGroup);
     testData = [];
-    console.log(`Menor grupo: ${lowExamples} exemplos`)
+    console.log(`Menor grupo: ${lowExamples} exemplos`);
+
     stringGroup.forEach((item) => {
-        if (item.examples.length === lowExamples) {
+        if (item.examples.length <= lowExamples) {
             testData = [...testData, ...item.examples]
         }
     })
@@ -73,12 +77,12 @@ const deleteSmallGroups = () => {
     stringGroup = stringGroup.filter((item) => item.examples.length > lowExamples);
 }
 
-while (testData.length > 0 && distanceLimit < smallerGroup) {
+while (testData.length > 0 && distanceLimit < 10) {
     const runArray = [...testData];
 
-    runArray.forEach((testString, i) => {
+    runArray.forEach((testElement, i) => {
         //console.log(`Performing test on item #${i+1}/${testData.length}`);
-        addToGroup(testString);
+        addToGroup(testElement);
     });
     console.log(`Excluindo grupos com poucos exemplos`);
 
@@ -94,10 +98,10 @@ stringGroup.forEach((item, idx) => {
     item.examples.forEach((example) => {
         resultado.push({
             grupo: `Grupo ${idx+1}`,
-            exemplo: example
+            exemplo: example.original
         })
     })
-})
+});
 const newSheet = XLSX.utils.json_to_sheet(resultado);
 if (!wb.Sheets.Resultado) {
     XLSX.utils.book_append_sheet(wb, newSheet, 'Resultado');
